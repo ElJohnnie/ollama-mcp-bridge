@@ -1,16 +1,17 @@
 {
   "mcpServers": {
     "filesystem": {
-      "command": "/usr/bin/node",
+      "command": "node",
       "args": [
-        "/usr/lib/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
-        "/home/fq2103/mcp_workspace"
-      ]
-  }
+        "/usr/local/lib/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
+        "/app/workspace"
+      ],
+      "allowedDirectory": "/app/workspace"
+    }
   },
   "llm": {
-    "model": "deepseek-v2:16b",
-    "baseUrl": "http://localhost:11434",
+    "model": "qwen2.5-coder:7b-instruct",
+    "baseUrl": "http://ollama:11434",
     "apiKey": "ollama",
     "temperature": 0.7,
     "maxTokens": 1000

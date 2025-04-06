@@ -42,6 +42,7 @@ export class LLMClient {
 
   // Add this line to define the ollamaProcess property
   private ollamaProcess: ChildProcess | null = null;
+  format: { type: string; properties: { response: { type: string; enum: string[]; }; }; required: string[]; } | undefined;
 
   constructor(config: LLMConfig) {
     this.config = config;

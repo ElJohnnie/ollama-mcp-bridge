@@ -1,2 +1,11 @@
 *patch
 tmp0
+node_modules
+*.log
+*.env
+*.DS_Store
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace     
+ollama
