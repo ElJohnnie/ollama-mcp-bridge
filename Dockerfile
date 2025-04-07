@@ -8,6 +8,7 @@ RUN npm install -g @modelcontextprotocol/server-filesystem \
     @modelcontextprotocol/server-memory
 
 COPY .env package.json package-lock.json tsconfig.json ./
+COPY tests ./tests
 
 RUN npm install
 
