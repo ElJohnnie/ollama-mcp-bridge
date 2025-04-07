@@ -147,6 +147,8 @@ All while running completely locally with open-source models.
 - Enhance error recovery
 - Add conversation memory
 - Support more Ollama models
+- Make this project a HTTP server for easier integration
+- Make a frontend for easier use
 
 ## Related Projects
 
