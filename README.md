@@ -14,17 +14,6 @@ This project bridges local Large Language Models with MCP servers that provide v
 
 The bridge translates between the LLM's outputs and the MCP's JSON-RPC protocol, allowing any Ollama-compatible model to use these tools just like Claude does.
 
-## Current Setup
-
-- **LLM**: Using Qwen 2.5 7B (qwen2.5-coder:7b-instruct) through Ollama
-- **MCPs**:
-  - Filesystem operations (`@modelcontextprotocol/server-filesystem`)
-  - Brave Search (`@modelcontextprotocol/server-brave-search`)
-  - GitHub (`@modelcontextprotocol/server-github`)
-  - Memory (`@modelcontextprotocol/server-memory`)
-  - Flux image generation (`@patruff/server-flux`)
-  - Gmail & Drive (`@patruff/server-gmail-drive`)
-
 ## Architecture
 
 - **Bridge**: Core component that manages tool registration and execution
@@ -32,130 +21,106 @@ The bridge translates between the LLM's outputs and the MCP's JSON-RPC protocol,
 - **MCP Client**: Manages MCP server connections and JSON-RPC communication
 - **Tool Router**: Routes requests to appropriate MCP based on tool type
 
+### Container Components
+- **Ollama**: Runs the LLM (qwen2.5-coder:7b-instruct)
+- **Open WebUI**: Web interface for Ollama
+- **MCP Bridge**: The bridge service connecting LLMs to MCP tools
+
 ### Key Features
 - Multi-MCP support with dynamic tool routing
 - Structured output validation for tool calls
 - Automatic tool detection from user prompts
 - Robust process management for Ollama
 - Detailed logging and error handling
+- Fully containerized setup for easy deployment
 
-## Setup
+## Docker Setup
 
-1. Install Ollama and required model:
-```bash
-ollama pull qwen2.5-coder:7b-instruct
-```
+1. Make sure you have Docker and Docker Compose installed on your system.
 
-2. Install MCP servers:
-```bash
-npm install -g @modelcontextprotocol/server-filesystem
-npm install -g @modelcontextprotocol/server-brave-search
-npm install -g @modelcontextprotocol/server-github
-npm install -g @modelcontextprotocol/server-memory
-npm install -g @patruff/server-flux
-npm install -g @patruff/server-gmail-drive
-```
+2. Clone this repository:
+   ```bash
+   git clone https://github.com/yourusername/ollama-mcp-bridge.git
+   cd ollama-mcp-bridge
+    ```
+3. Configure credentials in .env file (copy from .env.template):
+    ```bash
+    cp .env.template .env
+    ```
+4. Start the containers using the provided script:
+    ```bash
+    chmod +x start.sh
+    ./start.sh
+    ```
 
-3. Configure credentials:
-   - Set `BRAVE_API_KEY` for Brave Search
-   - Set `GITHUB_PERSONAL_ACCESS_TOKEN` for GitHub
-   - Set `REPLICATE_API_TOKEN` for Flux
-   - Run Gmail/Drive MCP auth: `node path/to/gmail-drive/index.js auth`
-   - For example node C:\Users\patru\AppData\Roaming\npm\node_modules\@patruff\server-gmail-drive\dist\index.js auth
+### This script will:
+
+  Check if Docker is installed and running
+  Build and start all containers
+  Pull the qwen2.5-coder:7b-instruct model
+  Open a shell in the MCP Bridge container
+
+5. To stop the containers:
+    ```bash
+    ./stop.sh
+    ```
+
+## Accessing the Services
+
+After starting the containers, you can access:
+
+- Ollama API: http://localhost:7869
+- Open WebUI: http://localhost:8080
+- MCP Bridge: http://localhost:3000
+
+## Container Configuration
+
+The setup uses Docker Compose with the following containers:
+
+1. **Ollama**: Runs the LLM
+   - Image: `ollama/ollama:latest`
+   - Port: 7869:11434
+   - Volume: `./ollama/ollama:/root/.ollama`
+
+2. **Ollama WebUI**: Web interface
+   - Image: `ghcr.io/open-webui/open-webui:main`
+   - Port: 8080:8080
+   - Volume: `./ollama/ollama-webui:/app/backend/data`
+
+3. **MCP Bridge**: Bridge service
+   - Built from local Dockerfile
+   - Port: 3000:3000
+   - Volume: `./bridge_workspace:/app/workspace`
+
+The configuration is defined in `docker-compose.yml`.
+
+## Usage (Inside MCP Bridge Container)
+
+When the start script completes, you'll be in a shell inside the MCP Bridge container where you can:
+- trigger an "npm run start" command to start the bridge
+- Use `list-tools` to show available tools
+- Enter prompts to interact with the LLM
+- Type `quit` to exit the program
+
+## Example interactions:
+
+- Search the web for "latest TypeScript features" [Uses Brave Search MCP to find results] 
+
+- Create a new folder called "project-docs" [Uses Filesystem MCP to create directory]
+
+## Available MCP Tools
+
+The containerized setup provides:
+- Filesystem operations
+- Brave web search (requires API key)
+- GitHub interactions (requires API token)
+- Memory/storage
+- Image generation with Flux (requires API token)
+- Gmail & Drive integration (requires OAuth setup)
 
 ## Configuration
 
 The bridge is configured through `bridge_config.json`:
 - MCP server definitions
-- LLM settings (model, temperature, etc.)
+- LLM settings
 - Tool permissions and paths
-
-Example:
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "node",
-      "args": ["path/to/server-filesystem/dist/index.js"],
-      "allowedDirectory": "workspace/path"
-    },
-    // ... other MCP configurations
-  },
-  "llm": {
-    "model": "qwen2.5-coder:7b-instruct",
-    "baseUrl": "http://localhost:11434"
-  }
-}
-```
-
-## Usage
-
-1. Start the bridge:
-```bash
-npm run start
-```
-
-2. Available commands:
-   - `list-tools`: Show available tools
-   - Regular text: Send prompts to the LLM
-   - `quit`: Exit the program
-
-Example interactions:
-```
-> Search the web for "latest TypeScript features"
-[Uses Brave Search MCP to find results]
-
-> Create a new folder called "project-docs"
-[Uses Filesystem MCP to create directory]
-
-> Send an email to user@example.com
-[Uses Gmail MCP to compose and send email]
-```
-
-## Technical Details
-
-### Tool Detection
-The bridge includes smart tool detection based on user input:
-- Email operations: Detected by email addresses and keywords
-- Drive operations: Detected by file/folder keywords
-- Search operations: Contextually routed to appropriate search tool
-
-### Response Processing
-Responses are processed through multiple stages:
-1. LLM generates structured tool calls
-2. Bridge validates and routes to appropriate MCP
-3. MCP executes operation and returns result
-4. Bridge formats response for user
-
-## Extended Capabilities
-
-This bridge effectively brings Claude's tool capabilities to local models:
-- Filesystem manipulation
-- Web search and research
-- Email and document management
-- Code and GitHub interactions
-- Image generation
-- Persistent memory
-
-All while running completely locally with open-source models.
-
-## Future Improvements
-
-- Add support for more MCPs
-- Implement parallel tool execution
-- Add streaming responses
-- Enhance error recovery
-- Add conversation memory
-- Support more Ollama models
-- Make this project a HTTP server for easier integration
-- Make a frontend for easier use
-
-## Related Projects
-
-This bridge integrates with the broader Claude ecosystem:
-- Model Context Protocol (MCP)
-- Claude Desktop Configuration
-- Ollama Project
-- Various MCP server implementations
-
-The result is a powerful local AI assistant that can match many of Claude's capabilities while running entirely on your own hardware.
